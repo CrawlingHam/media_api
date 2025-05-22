@@ -1,42 +1,43 @@
-import { CloudinaryExecuteProps, CloudinaryUploadProps } from '@/types';
-import { CloudinarySignatureService } from './signature';
-import { CloudinaryUploadService } from './upload';
-import { Injectable } from '@nestjs/common';
+import { CloudinaryGenerateSignatureResponse, CloudinaryProps, CloudinaryResponse } from '@/types';
+import { CloudinaryUploadService } from './upload.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { services } from '@/services.locations';
 import { ErrorService } from '../error';
+import axios from 'axios';
 
 @Injectable()
 export class CloudinaryService {
+    private logger = new Logger(CloudinaryService.name);
+    private readonly signatureEndpoint = services.aws.media.cloudinary.signature;
+
     constructor(
-        private readonly signatureService: CloudinarySignatureService,
         private readonly uploadService: CloudinaryUploadService,
         private readonly errorService: ErrorService
-    ) {
-        this.errorService.setContext(CloudinaryService.name);
-    }
+    ) {}
 
-    public async execute(props: CloudinaryExecuteProps): Promise<void> {
-        const { formData, execution, operation, res } = props;
+    public async execute(props: CloudinaryProps): Promise<CloudinaryResponse> {
+        const { file, operation, res } = props;
 
-        switch (execution) {
-            case 'upload':
-                await this.upload({ formData, operation, res });
-                break;
+        switch (operation) {
+            case 'CLOUDINARY UPLOAD IMAGE':
+                const signatureData = await this.signature();
+                const metadata = signatureData.body;
+                this.logger.log('🔑 Signature metadata retrieved successfully');
+                return await this.uploadService.execute({ operation, file, res, metadata });
             default:
                 throw new Error('Invalid execution');
         }
     }
 
-    private async upload(props: CloudinaryUploadProps): Promise<void> {
-        const { formData, operation, res } = props;
-
-        await this.errorService.execute(
-            'upload',
-            async () => {
-                const body = await this.signatureService.getSignature({ formData });
-                const url = await this.uploadService.upload({ formData, operation, body });
-                return { url };
+    private async signature(): Promise<CloudinaryGenerateSignatureResponse> {
+        return await this.errorService.execute<CloudinaryGenerateSignatureResponse>({
+            fn: async () => {
+                const response = await axios.get(this.signatureEndpoint);
+                return response.data;
             },
-            res
-        );
+            operation: 'CLOUDINARY GENERATE SIGNATURE',
+            context: CloudinaryService.name,
+            validateSuccess: true,
+        });
     }
 }

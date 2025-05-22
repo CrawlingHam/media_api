@@ -6,16 +6,18 @@ import { json, urlencoded } from 'body-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/modules';
 
-const MAX_PAYLOAD_SIZE = '10mb';
+const MAX_PAYLOAD_SIZE = 10 as const;
+export const MAX_PAYLOAD_SIZE_BYTES = MAX_PAYLOAD_SIZE * Math.pow(1024, 2);
+const MAX_PAYLOAD_SIZE_STRING = `${MAX_PAYLOAD_SIZE}mb` as const;
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     const logger = new Logger('Bootstrap');
 
     app.enableCors(corsConfig);
-    app.use(json({ limit: MAX_PAYLOAD_SIZE }));
-    app.use(urlencoded({ extended: true, limit: MAX_PAYLOAD_SIZE }));
-    app.useGlobalPipes(new ValidationPipe(validationConfig));
+    // app.use(json({ limit: MAX_PAYLOAD_SIZE_STRING }));
+    // app.use(urlencoded({ extended: true, limit: MAX_PAYLOAD_SIZE_STRING }));
+    // app.useGlobalPipes(new ValidationPipe(validationConfig));
     app.useGlobalFilters(new HttpExceptionFilter());
     app.use(createRequestLogger());
 

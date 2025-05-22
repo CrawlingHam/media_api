@@ -16,6 +16,6 @@ import { CorsOptions } from 'cors';
 export const corsConfig: CorsOptions = {
     allowedHeaders: 'Content-Type, Accept, Authorization',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    origin: [services.apps.domain],
+    origin: [services.apps.domain, 'http://localhost:5000'],
     credentials: true,
 };

@@ -6,38 +6,37 @@ config({ path: path.resolve(__dirname, '../.env') });
 
 const envConfig: IEnvironmentConfig = {
     location: 'services locations',
-    requiredVariables: [
-        'API_CLOUDINARY_IMAGE_UPLOAD_URL',
-        'API_AWS_GATEWAY_MEDIA_URL',
-        'CLOUDINARY_UPLOAD_PRESET',
-        'CLOUDINARY_CLOUD_NAME',
-        'MEDIA_SERVER',
-        'DOMAIN',
-    ],
+    requiredVariables: ['API_AWS_GATEWAY_MEDIA_URL', 'MEDIA_SERVER', 'DOMAIN'],
 };
 
-const {
-    DOMAIN,
-    MEDIA_SERVER,
-    CLOUDINARY_CLOUD_NAME,
-    CLOUDINARY_UPLOAD_PRESET,
-    API_AWS_GATEWAY_MEDIA_URL,
-    API_CLOUDINARY_IMAGE_UPLOAD_URL,
-} = ensureRequiredEnvironmentVariables(envConfig);
+const { DOMAIN, MEDIA_SERVER, API_AWS_GATEWAY_MEDIA_URL } = ensureRequiredEnvironmentVariables(envConfig);
 
 const paths = {
     aws: {
         media: {
             gateway: API_AWS_GATEWAY_MEDIA_URL,
             cloudinary: {
-                base: '/cloudinary',
-                signature: '/signature',
+                base: 'cloudinary',
+                signature: 'signature',
+                upload: {
+                    base: 'upload',
+                    image: 'image',
+                },
             },
         },
     },
     servers: {
         media: {
             base: MEDIA_SERVER,
+            controllers: {
+                cloudinary: {
+                    base: 'cloudinary',
+                    upload: {
+                        base: 'upload',
+                        image: 'image',
+                    },
+                },
+            },
         },
     },
 } as const;
@@ -45,7 +44,13 @@ const paths = {
 const server = {
     port: new URL(paths.servers.media.base).port || 8003,
     controllers: {
-        cloudinary: 'cloudinary',
+        cloudinary: {
+            base: paths.servers.media.controllers.cloudinary.base,
+            upload: {
+                base: paths.servers.media.controllers.cloudinary.upload.base,
+                image: `${paths.servers.media.controllers.cloudinary.upload.base}/${paths.servers.media.controllers.cloudinary.upload.image}`,
+            },
+        },
     },
 };
 
@@ -53,13 +58,6 @@ const domain = new URL(DOMAIN);
 
 const apps = {
     domain: domain.toString(),
-};
-
-const cloudinary = {
-    uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-    upload: constructUrl(
-        API_CLOUDINARY_IMAGE_UPLOAD_URL.replace('{CLOUDINARY_CLOUD_NAME}', CLOUDINARY_CLOUD_NAME)
-    ).toString(),
 };
 
 const aws = {
@@ -70,12 +68,19 @@ const aws = {
                 paths.aws.media.cloudinary.base,
                 paths.aws.media.cloudinary.signature
             ).toString(),
+            upload: {
+                image: constructUrl(
+                    paths.aws.media.gateway,
+                    paths.aws.media.cloudinary.base,
+                    paths.aws.media.cloudinary.upload.base,
+                    paths.aws.media.cloudinary.upload.image
+                ).toString(),
+            },
         },
     },
 };
 
 export const services = {
-    cloudinary,
     server,
     apps,
     aws,

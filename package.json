@@ -5,15 +5,16 @@
     "main": "eslint.config.js",
     "packageManager": "pnpm@10.9.0",
     "scripts": {
-        "clean": "npx rimraf dist",
-        "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "build": "pnpm run clean && pnpm run lint:fix && pnpm run format && tsc -b",
+        "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+        "start:build": "pnpm run build && node dist/server.js",
+        "start": "pnpm run build:only && pnpm run start:only",
         "format:check": "prettier --check \"src/**/*.ts\"",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
-        "start": "pnpm run build && node dist/server.js",
         "format": "prettier --write \"src/**/*.ts\"",
+        "build:only": "pnpm run clean && tsc -b",
         "start:only": "node dist/server.js",
-        "build:only": "pnpm run clean && tsc -b"
+        "clean": "npx rimraf dist"
     },
     "_moduleAliases": {
         "@": "dist"
@@ -29,6 +30,7 @@
         "@types/body-parser": "^1.19.5",
         "@types/cors": "^2.8.17",
         "@types/express": "^5.0.1",
+        "@types/multer": "^1.4.12",
         "@typescript-eslint/eslint-plugin": "^8.31.1",
         "@typescript-eslint/parser": "^8.31.1",
         "body-parser": "^2.2.0",
@@ -45,8 +47,10 @@
         "typescript": "^5.8.3"
     },
     "dependencies": {
+        "@nestjs/swagger": "^11.2.0",
         "axios": "^1.9.0",
         "flixburst-environment_variables": "^1.0.8",
+        "multer": "^2.0.0",
         "zod": "^3.24.4"
     }
 }
