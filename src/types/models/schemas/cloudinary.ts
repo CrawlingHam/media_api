@@ -5,6 +5,7 @@ import { z } from 'zod';
 export type CloudinaryServiceOperation = z.infer<(typeof CloudinarySchema)['serviceOperation']>;
 export type CloudinaryOperation = z.infer<(typeof CloudinarySchema)['operation']>;
 
+export type CloudinaryGenerateSignatureResponseBody = z.infer<(typeof CloudinarySchema)['cloudinaryUploadMetadata']>;
 export type CloudinaryGenerateSignatureResponse = z.infer<(typeof CloudinarySchema)['generateSignatureResponse']>;
 export type CloudinaryUploadImageResponse = z.infer<(typeof CloudinarySchema)['uploadImageResponse']>;
 
