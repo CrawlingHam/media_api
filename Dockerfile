@@ -1,35 +1,54 @@
-# Build stage
-FROM node:23-alpine AS builder
+ARG NODE_VERSION=22-alpine
+
+FROM node:${NODE_VERSION} AS build
 
 WORKDIR /app
+
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+
 COPY . .
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile
+RUN pnpm run build:only
 
-RUN pnpm build:only
+FROM node:${NODE_VERSION} AS final
 
-# Production stage
-FROM node:23-alpine
+ARG MAINTAINER
+ARG PORT=8000
+
+ENV NODE_ENV=production
+
+# Add metadata
+LABEL description="NestJS Firebase API server"
+LABEL maintainer=${MAINTAINER}
+LABEL version="1.0.0"
+
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    appuser
+
+RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
 
-# Copy only the built artifacts and dependencies
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+RUN pnpm install --frozen-lockfile --prod
 
-# Create health check file
-RUN echo "healthy" > /app/health
+COPY --from=build /app/dist ./dist
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8002/health || exit 1
+USER appuser
 
-# Start the application
-CMD ["node", "dist/server.js"]
+EXPOSE ${PORT}
 
+CMD ["node", "dist/main"]
